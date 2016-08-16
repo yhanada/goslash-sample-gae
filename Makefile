@@ -9,6 +9,9 @@ install:
 clean:
 	rm -rf $(VENDOR_GOPATH)
 
+fmt:
+	gofmt -w ./src/app.go
+
 run:
 	goapp serve ./src
 

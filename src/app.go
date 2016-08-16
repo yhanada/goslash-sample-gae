@@ -1,7 +1,10 @@
 package app
 
 import (
+	"bytes"
+	"encoding/json"
 	"net/http"
+	"os"
 
 	"github.com/kyokomi/goslash/goslash"
 	"github.com/kyokomi/goslash/plugins"
@@ -13,13 +16,13 @@ import (
 
 	"github.com/unrolled/render"
 	"google.golang.org/appengine"
+	"google.golang.org/appengine/log"
 	"google.golang.org/appengine/urlfetch"
-	"bytes"
-	"encoding/json"
 )
 
 func init() {
 	renderer := render.New(render.Options{})
+	token := os.Getenv("SLACK_TOKEN")
 
 	http.HandleFunc("/v1/cmd", func(w http.ResponseWriter, r *http.Request) {
 		ctx := appengine.NewContext(r)
@@ -30,10 +33,16 @@ func init() {
 			return
 		}
 
+		if req.Token != token {
+			log.Errorf(ctx, "received invalid token:%v from %v", req.Token, r.RemoteAddr)
+			renderer.JSON(w, http.StatusForbidden, "invalid token")
+			return
+		}
+
 		slashPlugins := map[string]plugins.Plugin{
 			"echo":  echo.New(),
 			"time":  time.New(),
-			"突然":   suddendeath.New(),
+			"突然":    suddendeath.New(),
 			"LGTM":  lgtm.New(urlfetch.Client(ctx)),
 			"akari": akari.New(),
 		}
